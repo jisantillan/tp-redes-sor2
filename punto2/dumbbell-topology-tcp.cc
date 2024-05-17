@@ -67,7 +67,9 @@ PointToPointDumbbellHelper  SetupDumbbellTopology(uint32_t CLIENT_NODES_COUNT, u
 }
 
 void ConfigureApplicationDuration(ApplicationContainer &apps, Time startTime, Time stopTime) {
+  //Arrange for all of the Applications in this container to Start() at the Time given as a parameter. 
   apps.Start(startTime);
+  //Arrange for all of the Applications in this container to Stop() at the Time given as a parameter. 
   apps.Stop(stopTime);
 }
 
@@ -109,7 +111,6 @@ int main (int argc, char *argv[]){
   //ONOFFAPPLICATION 2 nodo 1--> nodo 2
   InstallApplications(NODE_1, NODE_2, port, clientApps, serverApps, dumbbell, TCP_SOCKET);
 
-  //Comienzo y parada de paquetes enviados (Clientes(emisores) -> Servidores(receptores)).
   ConfigureApplicationDuration(clientApps, Seconds(0.0), Seconds(30.0));
   ConfigureApplicationDuration(serverApps, Seconds(0.0), Seconds(100.0));
 }
