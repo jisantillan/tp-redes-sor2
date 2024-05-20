@@ -1,0 +1,2 @@
+plot "dumbbell-tp2-20-ssth.data" w l
+pause -1
