@@ -1,0 +1,3 @@
+plot "tp_redes_congestion_window3_0.data" w l, \
+"tp_redes_ssth3_0.data" w l
+pause -1

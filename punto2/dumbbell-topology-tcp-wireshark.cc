@@ -10,130 +10,283 @@
 #include <iomanip>
 #include "ns3/packet-sink.h"
 #include "ns3/ipv4-global-routing-helper.h"
+#include "ns3/netanim-module.h"
 
 #include <string>
 
 //Namespace declaration
 using namespace ns3;
 
-static bool firstCwnd20 = true;
-static bool firstSshThr20 = true;
-static bool firstRtt20 = true;
-static bool firstRto20 = true;
+static Ptr<OutputStreamWrapper> congestionWindowStream2;
+static bool fCongestionWindow2 = true;
+static Ptr<OutputStreamWrapper> ssThreshStream2;
+static bool fSSThresh2 = true;
+static Ptr<OutputStreamWrapper> rttStream2;
+static bool fRTT2 = true;
+static Ptr<OutputStreamWrapper> rtoStream2;
+static bool fRTO2 = true;
+static Ptr<OutputStreamWrapper> bytesInFlightStream2;
 
-static Ptr<OutputStreamWrapper> cWndStream20;
-static Ptr<OutputStreamWrapper> ssThreshStream20;
-static Ptr<OutputStreamWrapper> rttStream20;
-static Ptr<OutputStreamWrapper> rtoStream20;
-static Ptr<OutputStreamWrapper> inFlightStream20;
+static Ptr<OutputStreamWrapper> congestionWindowStream3;
+static bool fCongestionWindow3 = true;
+static Ptr<OutputStreamWrapper> ssThreshStream3;
+static bool fSSThresh3 = true;
+static Ptr<OutputStreamWrapper> rttStream3;
+static bool fRTT3 = true;
+static Ptr<OutputStreamWrapper> rtoStream3;
+static bool fRTO3 = true;
+static Ptr<OutputStreamWrapper> bytesInFlightStream3;
 
-static uint32_t cWndValue20;
-static uint32_t ssThreshValue20;
+static uint32_t congestionWindowValue2;
+static uint32_t ssThreshValue2;
 
+static uint32_t congestionWindowValue3;
+static uint32_t ssThreshValue3;
+
+std::string animFile = "my-animation.xml" ;  // Name of file for animation output
+
+static void
+saveTCPData(Ptr<OutputStreamWrapper> stream, float time, uint32_t value)
+{
+  *stream->GetStream () << time << " " << value << std::endl;
+}
+
+//Tracers para recopilar informacion de los cambios en los atributos de la conexión TCP del nodo 2 interfaz 0 (el primer nodo de la rama izquierda de nuestra red)
 static void
 CongestionWindowTracer2_0 (uint32_t oldval, uint32_t newval)
 {
-  if (firstCwnd20)
+  //Como empezamos luego de la simulacion (0.1 segundos luego) primero registramos en el segundo 0 manualmente. Esto tambien nos sirve a la hora de plotear los graficos de los datos recopilados
+  if (fCongestionWindow2)
     {
-      *cWndStream20->GetStream () << "0.0 " << oldval << std::endl;
-      firstCwnd20 = false;
+      saveTCPData(congestionWindowStream2, 0.0, oldval);
+      fCongestionWindow2 = false;
     }
-  *cWndStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << newval << std::endl;
-  cWndValue20 = newval;
-
-  //SSThresh is set according to the CongestionWindow. When the CongestionWindow changes, so does the SSThresh, and viceversa
-  if (!firstSshThr20)
+  else
     {
-      *ssThreshStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << ssThreshValue20 << std::endl;
+      saveTCPData(congestionWindowStream2, Simulator::Now ().GetSeconds (), newval);
+    }
+  congestionWindowValue2 = newval;
+  //SSThresh is set according to the CongestionWindow. When the CongestionWindow changes, so does the SSThresh, and viceversa
+  if (!fSSThresh2)
+    {
+      saveTCPData(ssThreshStream2, Simulator::Now ().GetSeconds (), ssThreshValue2);
     }
 }
 
 static void
 SSThreshTracer2_0 (uint32_t oldval, uint32_t newval)
 {
-  if (firstSshThr20)
+  if (fSSThresh2)
     {
-      *ssThreshStream20->GetStream () << "0.0 " << oldval << std::endl;
-      firstSshThr20 = false;
+      saveTCPData(ssThreshStream2, 0.0, oldval);
+      fSSThresh2 = false;
     }
-  *ssThreshStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << newval << std::endl;
-  ssThreshValue20 = newval;
-
-  //Go to line 44
-  if (!firstCwnd20)
+  else
     {
-      *cWndStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << cWndValue20 << std::endl;
+      saveTCPData(ssThreshStream2, Simulator::Now ().GetSeconds (), newval);
+    }
+  ssThreshValue2 = newval;
+
+  //Go to line 60
+  if (!fCongestionWindow2)
+    {
+      saveTCPData(ssThreshStream2, Simulator::Now ().GetSeconds (), congestionWindowValue2);
     }
 }
 
 static void
 RTTTracer2_0 (Time oldval, Time newval)
 {
-  if (firstRtt20)
+  if (fRTT2)
     {
-      *rttStream20->GetStream () << "0.0 " << oldval.GetSeconds () << std::endl;
-      firstRtt20 = false;
+      saveTCPData(rttStream2, 0.0, oldval.GetSeconds ());
+      fRTT2 = false;
     }
-  *rttStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << newval.GetSeconds () << std::endl;
+  else
+    {
+      saveTCPData(rttStream2, Simulator::Now ().GetSeconds (), newval.GetSeconds ());
+    }
 }
 
 static void
 RTOTracer2_0 (Time oldval, Time newval)
 {
-  if (firstRto20)
+  if (fRTO2)
     {
-      *rtoStream20->GetStream () << "0.0 " << oldval.GetSeconds () << std::endl;
-      firstRto20 = false;
+      saveTCPData(rtoStream2, 0.0, oldval.GetSeconds ());
+      fRTO2 = false;
     }
-  *rtoStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << newval.GetSeconds () << std::endl;
+  else
+    {
+      saveTCPData(rtoStream2, Simulator::Now ().GetSeconds (), newval.GetSeconds ());
+    }
 }
 
 static void
-BytesInFlightTracer2_0 (uint32_t old, uint32_t inFlight)
+BytesInFlightTracer2_0 (uint32_t unused, uint32_t bytesInFlight)
 {
-  //NS_UNUSED (old);
-  *inFlightStream20->GetStream () << Simulator::Now ().GetSeconds () << " " << inFlight << std::endl;
+  NS_UNUSED (unused);
+  saveTCPData(bytesInFlightStream2, Simulator::Now ().GetSeconds (), bytesInFlight);
 }
 
 static void
-TraceCongestionWindow2_0 (std::string cwnd_tr_file_name)
-{
-  AsciiTraceHelper ascii;
-  cWndStream20 = ascii.CreateFileStream (cwnd_tr_file_name.c_str ());
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow", MakeCallback (&CwndTracer20));
-}
-
-static void
-TraceSSThresh2_0 (std::string ssthresh_tr_file_name)
+TraceCongestionWindow2_0 (std::string file_name)
 {
   AsciiTraceHelper ascii;
-  ssThreshStream20 = ascii.CreateFileStream (ssthresh_tr_file_name.c_str ());
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/SlowStartThreshold", MakeCallback (&SsThreshTracer20));
+  congestionWindowStream2 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow", MakeCallback (&CongestionWindowTracer2_0));
 }
 
 static void
-TraceRTT2_0 (std::string rtt_tr_file_name)
+TraceSSThresh2_0 (std::string file_name)
 {
   AsciiTraceHelper ascii;
-  rttStream20 = ascii.CreateFileStream (rtt_tr_file_name.c_str ());
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/RTT", MakeCallback (&RttTracer20));
+  ssThreshStream2 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/SlowStartThreshold", MakeCallback (&SSThreshTracer2_0));
 }
 
 static void
-TraceRTO2_0 (std::string rto_tr_file_name)
+TraceRTT2_0 (std::string file_name)
 {
   AsciiTraceHelper ascii;
-  rtoStream20 = ascii.CreateFileStream (rto_tr_file_name.c_str ());
+  rttStream2 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/RTT", MakeCallback (&RTTTracer2_0));
+}
+
+static void
+TraceRTO2_0 (std::string file_name)
+{
+  AsciiTraceHelper ascii;
+  rtoStream2 = ascii.CreateFileStream (file_name.c_str ());
   //We use NodeList/2 because internally we have 7 nodes in total (3 left nodes, 2 routers nodes and 3 right nodes). Node number 2 == client_nodes[0]
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/RTO", MakeCallback (&RtoTracer20));
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/RTO", MakeCallback (&RTOTracer2_0));
 }
 
 static void
-TraceBytesInFlight2_0 (std::string &in_flight_file_name)
+TraceBytesInFlight2_0 (std::string file_name)
 {
   AsciiTraceHelper ascii;
-  inFlightStream20 = ascii.CreateFileStream (in_flight_file_name.c_str ());
-  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/BytesInFlight", MakeCallback (&InFlightTracer20));
+  bytesInFlightStream2 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/2/$ns3::TcpL4Protocol/SocketList/0/BytesInFlight", MakeCallback (&BytesInFlightTracer2_0));
+}
+
+//Tracers para recopilar informacion de los cambios en los atributos de la conexión TCP del nodo 3 interfaz 0 (el segundo nodo de la rama izquierda de nuestra red)
+static void
+CongestionWindowTracer3_0 (uint32_t oldval, uint32_t newval)
+{
+  //Como empezamos luego de la simulacion (0.1 segundos luego) primero registramos en el segundo 0 manualmente. Esto tambien nos sirve a la hora de plotear los graficos de los datos recopilados
+  if (fCongestionWindow3)
+    {
+      saveTCPData(congestionWindowStream3, 0.0, oldval);
+      fCongestionWindow3 = false;
+    }
+  else
+    {
+      saveTCPData(congestionWindowStream3, Simulator::Now ().GetSeconds (), newval);
+    }
+  congestionWindowValue3 = newval;
+  //SSThresh is set according to the CongestionWindow. When the CongestionWindow changes, so does the SSThresh, and viceversa
+  if (!fSSThresh3)
+    {
+      saveTCPData(ssThreshStream3, Simulator::Now ().GetSeconds (), ssThreshValue3);
+    }
+}
+
+static void
+SSThreshTracer3_0 (uint32_t oldval, uint32_t newval)
+{
+  if (fSSThresh3)
+    {
+      saveTCPData(ssThreshStream3, 0.0, oldval);
+      fSSThresh3 = false;
+    }
+  else
+    {
+      saveTCPData(ssThreshStream3, Simulator::Now ().GetSeconds (), newval);
+    }
+  ssThreshValue3 = newval;
+
+  //Go to line 60
+  if (!fCongestionWindow3)
+    {
+      saveTCPData(ssThreshStream3, Simulator::Now ().GetSeconds (), congestionWindowValue3);
+    }
+}
+
+static void
+RTTTracer3_0 (Time oldval, Time newval)
+{
+  if (fRTT3)
+    {
+      saveTCPData(rttStream3, 0.0, oldval.GetSeconds ());
+      fRTT3 = false;
+    }
+  else
+    {
+      saveTCPData(rttStream3, Simulator::Now ().GetSeconds (), newval.GetSeconds ());
+    }
+}
+
+static void
+RTOTracer3_0 (Time oldval, Time newval)
+{
+  if (fRTO3)
+    {
+      saveTCPData(rtoStream3, 0.0, oldval.GetSeconds ());
+      fRTO3 = false;
+    }
+  else
+    {
+      saveTCPData(rtoStream3, Simulator::Now ().GetSeconds (), newval.GetSeconds ());
+    }
+}
+
+static void
+BytesInFlightTracer3_0 (uint32_t unused, uint32_t bytesInFlight)
+{
+  NS_UNUSED (unused);
+  saveTCPData(bytesInFlightStream3, Simulator::Now ().GetSeconds (), bytesInFlight);
+}
+
+static void
+TraceCongestionWindow3_0 (std::string file_name)
+{
+  AsciiTraceHelper ascii;
+  congestionWindowStream3 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TcpL4Protocol/SocketList/0/CongestionWindow", MakeCallback (&CongestionWindowTracer3_0));
+}
+
+static void
+TraceSSThresh3_0 (std::string file_name)
+{
+  AsciiTraceHelper ascii;
+  ssThreshStream3 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TcpL4Protocol/SocketList/0/SlowStartThreshold", MakeCallback (&SSThreshTracer3_0));
+}
+
+static void
+TraceRTT3_0 (std::string file_name)
+{
+  AsciiTraceHelper ascii;
+  rttStream3 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TcpL4Protocol/SocketList/0/RTT", MakeCallback (&RTTTracer3_0));
+}
+
+static void
+TraceRTO3_0 (std::string file_name)
+{
+  AsciiTraceHelper ascii;
+  rtoStream3 = ascii.CreateFileStream (file_name.c_str ());
+  //We use NodeList/3 because internally we have 7 nodes in total (3 left nodes, 3 routers nodes and 3 right nodes). Node number 3 == client_nodes[1]
+  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TcpL4Protocol/SocketList/0/RTO", MakeCallback (&RTOTracer3_0));
+}
+
+static void
+TraceBytesInFlight3_0 (std::string file_name)
+{
+  AsciiTraceHelper ascii;
+  bytesInFlightStream3 = ascii.CreateFileStream (file_name.c_str ());
+  Config::ConnectWithoutContext ("/NodeList/3/$ns3::TcpL4Protocol/SocketList/0/BytesInFlight", MakeCallback (&BytesInFlightTracer3_0));
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -228,8 +381,9 @@ int main (int argc, char *argv[]){
   //Stack an InternetStackHelper which is used to install on every node in the dumbbell. 
   InternetStackHelper stack;
   
-  PointToPointHelper dumbbellHelper = CreatePointToPointHelper("ns3::DropTailQueue", "100kb/s", "100ms", "10p");
-  PointToPointHelper bottleneckHelper = CreatePointToPointHelper("ns3::DropTailQueue", "100kb/s", "100ms", "10p");   //PtPHelper used to install the link bw the inner-routers
+  Config::SetDefault("ns3::TcpL4Protocol::SocketType",TypeIdValue(TcpNewReno::GetTypeId()));
+  PointToPointHelper dumbbellHelper = CreatePointToPointHelper("ns3::DropTailQueue", "100KBps", "100ms", "10p");
+  PointToPointHelper bottleneckHelper = CreatePointToPointHelper("ns3::DropTailQueue", "50KBps", "50ms", "10p");   //PtPHelper used to install the link bw the inner-routers
   
   PointToPointDumbbellHelper dumbbell =  SetupDumbbellTopology(CLIENT_NODES_COUNT, SERVER_NODES_COUNT, port, dumbbellHelper, bottleneckHelper, stack);  
 
@@ -238,12 +392,12 @@ int main (int argc, char *argv[]){
   //ONOFFAPPLICATION 2 nodo 1--> nodo 2
   InstallApplications(NODE_1, NODE_2, port, clientApps, serverApps, dumbbell, TCP_SOCKET);
 
-  ConfigureApplicationDuration(clientApps, Seconds(0.0), Seconds(30.0));
+  ConfigureApplicationDuration(clientApps, Seconds(0.0), Seconds(40.0));
   ConfigureApplicationDuration(serverApps, Seconds(0.0), Seconds(100.0));
 
-  std::string prefix_file_name = "dumbbell-tp2";
+  std::string prefix_file_name = "tp_redes_";
 
-  dumbbellHelper.EnablePcapAll ("dumbbell-tp2", false);
+  dumbbellHelper.EnablePcapAll ("tp_redes_", false);
 
   std::ofstream ascii;
   Ptr<OutputStreamWrapper> ascii_wrap;
@@ -252,11 +406,23 @@ int main (int argc, char *argv[]){
                                         std::ios::out);
   stack.EnableAsciiIpv4All (ascii_wrap);
 
-  Simulator::Schedule (Seconds (0.001), &TraceCongestionWindow2_0, prefix_file_name + "-20-cwnd-test.data");
-  Simulator::Schedule (Seconds (0.001), &TraceSSThresh2_0, prefix_file_name + "-20-ssth-test.data");
-  Simulator::Schedule (Seconds (0.001), &TraceRTT2_0, prefix_file_name + "-20-rtt-test.data");
-  Simulator::Schedule (Seconds (0.001), &TraceRTO2_0, prefix_file_name + "-20-rto-test.data");
-  Simulator::Schedule (Seconds (0.001), &TraceBytesInFlight2_0, prefix_file_name + "-20-inflight-test.data");
+  Simulator::Schedule (Seconds (0.001), &TraceCongestionWindow2_0, prefix_file_name + "congestion_window2_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceSSThresh2_0, prefix_file_name + "ssth2_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceRTT2_0, prefix_file_name + "rtt2_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceRTO2_0, prefix_file_name + "rto2_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceBytesInFlight2_0, prefix_file_name + "bytes_inflight2_0.data");
+
+  Simulator::Schedule (Seconds (0.001), &TraceCongestionWindow3_0, prefix_file_name + "congestion_window3_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceSSThresh3_0, prefix_file_name + "ssth3_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceRTT3_0, prefix_file_name + "rtt3_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceRTO3_0, prefix_file_name + "rto3_0.data");
+  Simulator::Schedule (Seconds (0.001), &TraceBytesInFlight3_0, prefix_file_name + "bytes_inflight3_0.data");
+
+  dumbbell.BoundingBox (1, 1, 100, 100);
+
+  // Create the animation object and configure for specified output
+  AnimationInterface anim (animFile);
+  anim.EnablePacketMetadata (); // Optional
 
   Simulator::Run ();
   Simulator::Destroy ();
