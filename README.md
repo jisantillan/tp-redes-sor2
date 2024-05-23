@@ -22,9 +22,8 @@ Click [aquí](https://docs.google.com/document/d/118H7zzC6IB35fwhY8eYI8OZd9WQDBz
 ```
 
 
-
-- Introducción del tp
+<del> - Introducción del tp
+<del> - Cómo buildear
 - Explicar qué hace cada archivo
-- Cómo buildear
 - Cómo eliminar
 - Cómo generar la imagen con gnuplot
