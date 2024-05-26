@@ -14,16 +14,19 @@ Para ello tenemos 3 emisores on/off application (dos TCP y uno UDP), 3 receptore
 Click [aquí](https://docs.google.com/document/d/118H7zzC6IB35fwhY8eYI8OZd9WQDBzqXHoMFdrMMRQM/edit) para ver el informe completo.
 
 
-#### Comandos para la correcta ejecución del proyecto
+#### Instrucciones de ejecución
+Los archivos con extensión .cc, deben copiarse en el directorio de trabajo de NS-3:
+<i> /USER/ns3/ns3-allinone-3.31/ns3-3.31/scratch</i>
 
+- Abrir una terminal y navegar a la carpeta que contiene el directorio scratch:
+<i>/USER/ns3/ns3-allinone-3.31/ns3-3.31
+</i> 
+-  Ejecutar el siguiente comando para compilar y correr los archivos C++: 
 ```sh
-    //TODO replace name
-    ./waf --run scratch/elnombre 
+    ./waf --run scratch/<name-of-file> 
 ```
+- Reemplazar el <name-of-file> por el nombre del .cc. Por ejemplo:
+```./waf --run scratch/dumbbell-topology-tcp-wireshark```
 
-
-<del> - Introducción del tp
-<del> - Cómo buildear
-- Explicar qué hace cada archivo
-- Cómo eliminar
-- Cómo generar la imagen con gnuplot
+- Si la ejecución fué exitosa, veremos el mensaje al final de la consola.
+```> build finished successfully```
