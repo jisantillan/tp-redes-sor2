@@ -1,0 +1,2 @@
+plot "tp_redes_rto3_0.data" w l
+pause -1
