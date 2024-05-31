@@ -8,10 +8,9 @@ Para ello tenemos 3 emisores on/off application (dos TCP y uno UDP), 3 receptore
 
 
 
-![Dumbbell Img](img/dumbbell_topology_img.png)
+![Dumbbell Img](img/dumbbell_img.png)
 
-// TODO replace for PDF file
-Click [aquí](https://docs.google.com/document/d/118H7zzC6IB35fwhY8eYI8OZd9WQDBzqXHoMFdrMMRQM/edit) para ver el informe completo.
+Click [aquí](informe/Informe.pdf) para ver el informe completo.
 
 
 #### Instrucciones de ejecución
@@ -19,8 +18,9 @@ Los archivos con extensión .cc, deben copiarse en el directorio de trabajo de N
 <i> /USER/ns3/ns3-allinone-3.31/ns3-3.31/scratch</i>
 
 - Abrir una terminal y navegar a la carpeta que contiene el directorio scratch:
-<i>/USER/ns3/ns3-allinone-3.31/ns3-3.31
-</i> 
+```
+/USER/ns3/ns3-allinone-3.31/ns3-3.31
+``` 
 -  Ejecutar el siguiente comando para compilar y correr los archivos C++: 
 ```sh
     ./waf --run scratch/<name-of-file> 
